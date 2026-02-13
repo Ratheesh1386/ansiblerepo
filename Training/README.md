@@ -1,305 +1,335 @@
-<p align="center">
-  <img src="https://www.ansible.com/hubfs/Images/Red-Hat-Ansible_OG_1200x630.png" alt="Ansible Logo" width="400"/>
-</p>
+# Chapter 03 - Variables
 
-<h1 align="center">Ansible Zero to Expert Masterclass</h1>
+Master Ansible variables - from inline definitions to complex precedence rules.
 
-<p align="center">
-  <strong>From Your First Playbook to Production-Ready Automation</strong>
-</p>
+## What You'll Learn
 
-<p align="center">
-  <a href="#-course-overview">Overview</a> •
-  <a href="#-chapters">Chapters</a> •
-  <a href="#-prerequisites">Prerequisites</a> •
-  <a href="#-lab-setup">Lab Setup</a> •
-  <a href="#-quick-start">Quick Start</a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Ansible-2.15+-red?style=for-the-badge&logo=ansible" alt="Ansible"/>
-  <img src="https://img.shields.io/badge/Level-Beginner%20to%20Expert-blue?style=for-the-badge" alt="Level"/>
-  <img src="https://img.shields.io/badge/Chapters-23-green?style=for-the-badge" alt="Chapters"/>
-</p>
+- Defining variables inline with `vars`
+- Loading variables from files with `vars_files`
+- Using `group_vars/` for group-specific variables
+- Using `host_vars/` for host-specific variables
+- Understanding variable precedence
+- Using extra vars (`-e`) for runtime overrides
+- Registering task output as variables
+- Working with Ansible facts
+- Magic variables (special variables)
+- Variable scopes
 
 ---
 
-## 📖 Course Overview
+## Quick Start
 
-Welcome to the **Ansible Zero to Expert Masterclass**! This comprehensive course takes you from writing your first "Hello World" playbook to building production-ready automation solutions.
+### Step 1: Navigate to this chapter
 
-### What You'll Learn
-
-```
-✅ Ansible fundamentals and core concepts
-✅ Writing efficient and reusable playbooks
-✅ Managing infrastructure at scale
-✅ Security best practices with Ansible Vault
-✅ Building custom roles and modules
-✅ Real-world automation projects
+```bash
+cd chapter-03-variables
 ```
 
-### Who Is This Course For?
+### Step 2: Update Inventory with Your Server IPs
 
-| Audience | Description |
+Edit `inventory/hosts.ini` and replace `<SERVER_X_IP>` with your actual IPs:
+
+```bash
+vim inventory/hosts.ini
+```
+
+### Step 3: Verify Your Setup
+
+```bash
+# Test connectivity
+ansible all -m ping
+
+# View inventory with variables
+ansible-inventory --list
+```
+
+---
+
+## Directory Structure
+
+```
+chapter-03-variables/
+├── ansible.cfg
+├── inventory/
+│   └── hosts.ini
+├── group_vars/
+│   ├── all.yml          # Variables for ALL hosts
+│   ├── webservers.yml   # Variables for webservers group
+│   ├── dbservers.yml    # Variables for dbservers group
+│   └── production.yml   # Variables for production group
+├── host_vars/
+│   ├── ansible-lab-server-1.yml
+│   ├── ansible-lab-server-2.yml
+│   └── ansible-lab-server-3.yml
+├── vars/
+│   ├── common.yml       # Common variables (loaded via vars_files)
+│   ├── web_config.yml   # Web server config variables
+│   └── db_config.yml    # Database config variables
+└── playbooks (01-10)
+```
+
+---
+
+## Run the Playbooks
+
+### Playbook 01: Variables Inline (vars)
+
+**Concept:** Define variables directly in the playbook
+
+```bash
+ansible-playbook 01-vars-inline.yml
+```
+
+**Key Points:**
+- Simple strings, numbers, booleans
+- Lists and dictionaries
+- Multi-line strings
+- Variable referencing other variables
+
+---
+
+### Playbook 02: Variables from Files (vars_files)
+
+**Concept:** Load variables from external YAML files
+
+```bash
+ansible-playbook 02-vars-files.yml
+```
+
+**Key Points:**
+- Keeps playbooks clean and organized
+- Reuse variable files across playbooks
+- Separate configuration from logic
+
+---
+
+### Playbook 03: Group Variables (group_vars/)
+
+**Concept:** Automatic variable loading based on group membership
+
+```bash
+ansible-playbook 03-group-vars.yml
+```
+
+**Key Points:**
+- `group_vars/all.yml` applies to all hosts
+- `group_vars/<groupname>.yml` applies to specific groups
+- Variables are automatically loaded
+
+---
+
+### Playbook 04: Host Variables (host_vars/)
+
+**Concept:** Per-host variable files that override group_vars
+
+```bash
+ansible-playbook 04-host-vars.yml
+```
+
+**Key Points:**
+- Higher precedence than group_vars
+- Use for host-specific overrides
+- Named after the inventory hostname
+
+---
+
+### Playbook 05: Variable Precedence
+
+**Concept:** Understanding how variables override each other
+
+```bash
+# See which level the variable comes from
+ansible-playbook 05-variable-precedence.yml
+
+# Override with command line (highest precedence)
+ansible-playbook 05-variable-precedence.yml -e "precedence_test='from command line'"
+```
+
+**Precedence Order (lowest to highest):**
+1. role defaults
+2. inventory group_vars/all
+3. inventory group_vars/*
+4. inventory host_vars/*
+5. play vars
+6. play vars_files
+7. task vars
+8. set_facts
+9. **extra vars (-e)** ← Highest
+
+---
+
+### Playbook 06: Extra Variables (-e)
+
+**Concept:** Override any variable from the command line
+
+```bash
+# Default values
+ansible-playbook 06-extra-vars.yml
+
+# Override single variable
+ansible-playbook 06-extra-vars.yml -e "target_env=staging"
+
+# Override multiple variables
+ansible-playbook 06-extra-vars.yml -e "target_env=production debug=true"
+
+# JSON format
+ansible-playbook 06-extra-vars.yml -e '{"target_env": "dev", "version": "2.0"}'
+
+# Load from file
+ansible-playbook 06-extra-vars.yml -e "@vars/common.yml"
+```
+
+---
+
+### Playbook 07: Register Variables
+
+**Concept:** Capture task output into variables
+
+```bash
+ansible-playbook 07-register-variables.yml
+```
+
+**Key Points:**
+- `register: result` captures output
+- Access with `result.stdout`, `result.rc`, etc.
+- Use in conditionals with `when`
+
+---
+
+### Playbook 08: Ansible Facts
+
+**Concept:** System information gathered from managed hosts
+
+```bash
+ansible-playbook 08-facts-as-variables.yml
+```
+
+**Key Points:**
+- Automatically gathered (or use `gather_facts: false`)
+- Access with `ansible_*` variables
+- Filter facts for faster gathering
+- Create custom facts in `/etc/ansible/facts.d/`
+
+**Useful Facts:**
+- `ansible_os_family`: Debian, RedHat, etc.
+- `ansible_distribution`: Ubuntu, CentOS, etc.
+- `ansible_hostname`: Short hostname
+- `ansible_default_ipv4.address`: Primary IP
+- `ansible_memtotal_mb`: Total RAM
+
+---
+
+### Playbook 09: Magic Variables
+
+**Concept:** Special variables automatically set by Ansible
+
+```bash
+ansible-playbook 09-magic-variables.yml
+```
+
+**Key Magic Variables:**
+| Variable | Description |
 |----------|-------------|
-| 🌱 **Beginners** | No prior Ansible experience required |
-| 💼 **DevOps Engineers** | Enhance your automation skills |
-| 🖥️ **System Administrators** | Automate repetitive tasks |
-| ☁️ **Cloud Engineers** | Manage cloud infrastructure with code |
+| `inventory_hostname` | Current host name |
+| `group_names` | Groups the host belongs to |
+| `groups` | All groups and their members |
+| `hostvars` | Variables for all hosts |
+| `ansible_play_hosts` | Hosts in current play |
+| `playbook_dir` | Playbook directory path |
+| `ansible_check_mode` | True if --check mode |
 
 ---
 
-## 📚 Chapters
+### Playbook 10: Variable Scopes
 
-### 🟢 Foundation (Chapters 1-4)
-
-| # | Chapter | Description | Status |
-|---|---------|-------------|--------|
-| 01 | [Hello Ansible](./chapter-01-hello-ansible/) | Your first playbook, ad-hoc commands, ping, debug | ✅ Ready |
-| 02 | [Inventory Deep Dive](./chapter-02-inventory-deep-dive/) | Static inventory, groups, host patterns | ✅ Ready |
-| 03 | [Variables](./chapter-03-variables/) | vars, vars_files, host_vars, group_vars, facts, magic variables | ✅ Ready |
-| 04 | [Conditionals](./chapter-04-conditionals/) | when, failed_when, changed_when, multiple conditions | ✅ Ready |
-
-### 🟡 Intermediate (Chapters 5-11)
-
-| # | Chapter | Description | Status |
-|---|---------|-------------|--------|
-| 05 | [Loops](./chapter-05-loops/) | loop, with_items, with_dict, loop_control | ✅ Ready |
-| 06 | [Handlers](./chapter-06-handlers/) | handlers, notify, listen, flush_handlers | ✅ Ready |
-| 07 | Tags | tags, always, never, --tags, --skip-tags | 📝 Coming Soon |
-| 08 | Register & Debug | register, debug, assert, fail | 📝 Coming Soon |
-| 09 | Templates | Jinja2 templates, filters, template module | 📝 Coming Soon |
-| 10 | File Management | copy, file, lineinfile, blockinfile | 📝 Coming Soon |
-| 11 | Package Management | apt, yum, package, pip | 📝 Coming Soon |
-
-### 🟠 Advanced (Chapters 12-17)
-
-| # | Chapter | Description | Status |
-|---|---------|-------------|--------|
-| 12 | Service Management | service, systemd, restarted, enabled | 📝 Coming Soon |
-| 13 | User & Group Management | user, group, authorized_key | 📝 Coming Soon |
-| 14 | Blocks & Error Handling | block, rescue, always, ignore_errors | 📝 Coming Soon |
-| 15 | Roles | Role structure, defaults, tasks, handlers | 📝 Coming Soon |
-| 16 | Ansible Galaxy | Install roles, collections, requirements.yml | 📝 Coming Soon |
-| 17 | Vault | Encryption, vault password, encrypt_string | 📝 Coming Soon |
-
-### 🔴 Expert (Chapters 18-23)
-
-| # | Chapter | Description | Status |
-|---|---------|-------------|--------|
-| 18 | Dynamic Inventory | Scripts, plugins, cloud providers | 📝 Coming Soon |
-| 19 | Lookups & Filters | lookup plugins, custom filters | 📝 Coming Soon |
-| 20 | Custom Modules | Writing Python modules | 📝 Coming Soon |
-| 21 | Ansible Tower/AWX | Web UI, job templates, credentials | 📝 Coming Soon |
-| 22 | Best Practices | Directory layout, naming, idempotency | 📝 Coming Soon |
-| 23 | Real-World Project | Deploy nginx with SSL, monitoring stack | 📝 Coming Soon |
-
----
-
-## 🛠️ Prerequisites
-
-Before starting this course, ensure you have:
+**Concept:** Understanding where variables exist and persist
 
 ```bash
-# 1. Ansible installed (version 2.15 or higher)
-ansible --version
-
-# 2. Python 3.x installed
-python3 --version
-
-# 3. SSH client available
-ssh -V
+ansible-playbook 10-variable-scopes.yml
 ```
 
-### Required Knowledge
-
-- 📌 Basic Linux command line
-- 📌 Understanding of SSH
-- 📌 Basic YAML syntax (we'll cover this too!)
+**Scope Types:**
+| Scope | Set By | Lifetime |
+|-------|--------|----------|
+| Global | -e, config, env | Entire run |
+| Play | vars, vars_files | Current play |
+| Host | set_fact, host_vars | Entire run (per host) |
+| Block | vars in block | Block tasks only |
+| Task | vars on task | Single task |
 
 ---
 
-## 🖥️ Lab Setup
+## Variable Precedence (Complete List)
 
-This course uses **Google Cloud Platform (GCP)** for lab servers. We provide Terraform scripts to provision your lab environment.
+From lowest to highest precedence:
 
-### Quick Lab Setup
+```
+1.  command line values (e.g., -u user)
+2.  role defaults (role/defaults/main.yml)
+3.  inventory file or script group vars
+4.  inventory group_vars/all
+5.  playbook group_vars/all
+6.  inventory group_vars/*
+7.  playbook group_vars/*
+8.  inventory file or script host vars
+9.  inventory host_vars/*
+10. playbook host_vars/*
+11. host facts / cached set_facts
+12. play vars
+13. play vars_prompt
+14. play vars_files
+15. role vars (role/vars/main.yml)
+16. block vars
+17. task vars
+18. include_vars
+19. set_facts / registered vars
+20. role params
+21. include params
+22. extra vars (-e) ← ALWAYS WINS
+```
+
+---
+
+## Ad-hoc Commands with Variables
 
 ```bash
-# Navigate to the lab provisioning directory
-cd util/ansible-lab-servers
+# Pass extra vars
+ansible all -m debug -a "msg={{ my_var }}" -e "my_var=hello"
 
-# Update terraform.tfvars with your GCP project ID
-# Then run:
-terraform init
-terraform apply
-```
+# Show all variables for a host
+ansible ansible-lab-server-1 -m debug -a "var=hostvars[inventory_hostname]"
 
-### Lab Architecture
+# Show specific fact
+ansible all -m setup -a "filter=ansible_distribution"
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Your Local Machine                    │
-│                   (Ansible Control Node)                 │
-└─────────────────────┬───────────────────────────────────┘
-                      │ SSH
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│                  Google Cloud Platform                   │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
-│  │  ansible-   │ │  ansible-   │ │  ansible-   │       │
-│  │  lab-server │ │  lab-server │ │  lab-server │       │
-│  │     -1      │ │     -2      │ │     -3      │       │
-│  └─────────────┘ └─────────────┘ └─────────────┘       │
-└─────────────────────────────────────────────────────────┘
-```
-
-### SSH Connection
-
-```bash
-ssh -i /path/to/private-key ansible@<SERVER_IP>
+# Show group membership
+ansible all -m debug -a "var=group_names"
 ```
 
 ---
 
-## 🚀 Quick Start
+## Best Practices
 
-### 1️⃣ Clone the Repository
-
-```bash
-git clone https://github.com/rahulwagh/ansible-zero-to-expert-masterclass.git
-cd ansible-zero-to-expert-masterclass
-```
-
-### 2️⃣ Start with Chapter 01
-
-```bash
-cd chapter-01-hello-ansible
-
-# Update inventory with your server IPs
-vim inventory
-
-# Run your first playbook
-ansible-playbook 01-ping-playbook.yml
-```
-
-### 3️⃣ Explore and Learn
-
-Each chapter contains:
-- 📄 `README.md` - Chapter instructions
-- 📋 `inventory` - Host definitions
-- 🎯 `*.yml` - Playbook files
-- ⚙️ `ansible.cfg` - Configuration
+1. **Use group_vars/all.yml** for common defaults
+2. **Use group_vars/<group>.yml** for role-specific settings
+3. **Use host_vars/** only for true host-specific overrides
+4. **Use vars_files** for environment-specific configs
+5. **Use -e** for runtime overrides and CI/CD
+6. **Never store secrets in plain text** - use Ansible Vault (next chapter!)
+7. **Keep variable names descriptive** and consistent
+8. **Document complex variables** with comments
 
 ---
 
-## 📁 Repository Structure
+## Key Takeaways
 
-```
-ansible-zero-to-expert-masterclass/
-│
-├── 📖 README.md                    # You are here!
-│
-├── 📁 chapter-01-hello-ansible/    # Getting started
-│   ├── ansible.cfg
-│   ├── inventory
-│   ├── 01-ping-playbook.yml
-│   ├── 02-hello-world-playbook.yml
-│   ├── 03-gather-facts-playbook.yml
-│   ├── 04-dynamic-host-playbook.yml
-│   └── README.md
-│
-├── 📁 chapter-02-inventory-deep-dive/  # Inventory mastery
-│   ├── ansible.cfg
-│   ├── inventory/
-│   │   ├── hosts.ini
-│   │   ├── 01-basic-inventory.ini
-│   │   ├── 02-groups-inventory.ini
-│   │   └── ... (6 inventory examples)
-│   ├── 01-target-all-hosts.yml
-│   ├── ... (10 playbooks)
-│   └── README.md
-│
-├── 📁 chapter-03-variables/            # Variables mastery
-│   ├── ansible.cfg
-│   ├── inventory/
-│   ├── group_vars/
-│   │   ├── all.yml
-│   │   ├── webservers.yml
-│   │   └── dbservers.yml
-│   ├── host_vars/
-│   ├── vars/
-│   ├── 01-vars-inline.yml
-│   ├── ... (10 playbooks)
-│   └── README.md
-│
-├── 📁 chapter-04-conditionals/         # Conditionals
-│   ├── ansible.cfg
-│   ├── inventory/
-│   ├── 01-when-basics.yml
-│   ├── ... (5 playbooks)
-│   └── README.md
-│
-├── 📁 chapter-05-loops/                # Loops
-│   ├── ansible.cfg
-│   ├── inventory/
-│   ├── 01-loop-basics.yml
-│   ├── ... (4 playbooks)
-│   └── README.md
-│
-├── 📁 chapter-06-handlers/             # Handlers
-│   ├── ansible.cfg
-│   ├── inventory/
-│   ├── 01-handler-basics.yml
-│   ├── ... (4 playbooks)
-│   └── README.md
-│
-└── 📁 util/                        # Utilities
-    └── ansible-lab-servers/        # Terraform for lab VMs
-        ├── main.tf
-        ├── variables.tf
-        ├── outputs.tf
-        └── terraform.tfvars
-```
-
----
-
-## 💡 Tips for Success
-
-| Tip | Description |
-|-----|-------------|
-| 🔄 **Practice Daily** | Hands-on practice is key to mastering Ansible |
-| 📝 **Take Notes** | Document your learnings and gotchas |
-| 🧪 **Experiment** | Modify playbooks and see what happens |
-| 🐛 **Debug Fearlessly** | Use `-v`, `-vv`, `-vvv` for verbose output |
-| 📚 **Read Docs** | [docs.ansible.com](https://docs.ansible.com) is your friend |
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-
-- 🐛 Report bugs
-- 💡 Suggest new topics
-- 📝 Improve documentation
-- 🔧 Submit pull requests
-
----
-
-## 📬 Connect
-
-- 🌐 Website: [yourwebsite.com](https://yourwebsite.com)
-- 📺 YouTube: [Your Channel](https://youtube.com)
-- 💼 LinkedIn: [Your Profile](https://linkedin.com)
-
----
-
-<p align="center">
-  <strong>Happy Automating! 🚀</strong>
-</p>
-
-<p align="center">
-  Made with ❤️ by Rahul Wagh
-</p>
+1. **vars** - Define variables directly in playbooks
+2. **vars_files** - Load variables from external files
+3. **group_vars/** - Automatic variables by group membership
+4. **host_vars/** - Per-host variable overrides
+5. **-e (extra vars)** - Highest precedence, command-line overrides
+6. **register** - Capture task output into variables
+7. **facts** - System info gathered from hosts
+8. **magic variables** - Special Ansible-provided variables
+9. **Precedence matters** - Know which level wins
+10. **Scope matters** - Know where variables persist
